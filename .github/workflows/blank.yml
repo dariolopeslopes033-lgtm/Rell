@@ -1,0 +1,47 @@
+name: PC Virtual no GitHub
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Definir Senha do Usuário (mude se quiser)
+        run: |
+          echo "root:password123" | sudo chpasswd
+          echo "Senha configurada com sucesso!"
+
+      - name: Instalar Ferramentas de Rede e Ambiente Gráfico (XFCE)
+        run: |
+          sudo apt update
+          sudo apt install -y xfce4 xfce4-goodies tightvncserver wget curl
+
+      - name: Instalar e Configurar o Ngrok (Para Acesso Externo)
+        run: |
+          curl -s https://ngrok-agent.herokuapp.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://bin.ngrok.com stable main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install -y ngrok
+          
+          # Se você tiver um token do Ngrok, descomente a linha abaixo e insira seu token:
+          # ngrok config add-authtoken SEU_TOKEN_AQUI
+
+      - name: Iniciar Servidor VNC
+        run: |
+          vncserver :1 -geometry 1280x720 -depth 24
+
+      - name: Conectar via Ngrok (Porta VNC 5901)
+        run: |
+          ngrok tcp 5901 &
+          sleep 5
+          echo "=== INFORMAÇÕES DE ACESSO ==="
+          curl --silent http://127.0.0.1:4040/api/tunnels | jq .
+
+      - name: Manter a Máquina Ligada
+        run: |
+          echo "PC Virtual rodando! Pressione Cancelar no GitHub Actions para encerrar."
+          sleep 21600 # Mantém por até 6 horas ligado
